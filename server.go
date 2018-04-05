@@ -210,12 +210,12 @@ func newRequestLogger(filePath string) (h context.Handler, close func() error) {
 	close = func() error { return nil }
 
 	c := irisLogger.Config{
-		Status:            true,
-		IP:                true,
-		Method:            true,
-		Path:              true,
-		Columns:           true,
-		MessageContextKey: "error",
+		Status:             true,
+		IP:                 true,
+		Method:             true,
+		Path:               true,
+		Columns:            true,
+		MessageContextKeys: []string{"error"},
 	}
 
 	logFile := newLogFile(filePath)
@@ -224,12 +224,15 @@ func newRequestLogger(filePath string) (h context.Handler, close func() error) {
 		return err
 	}
 
-	c.LogFunc = func(now time.Time, latency time.Duration, status, ip, method, path string, responseLength int, message interface{}) {
+	c.LogFunc = func(now time.Time, latency time.Duration, status, ip, method, path string, responseLength int, message interface{}, headerMessage interface{}) {
 		//		output := irisLogger.Columnize(now.Format("2006/01/02 - 15:04:05"), latency, status, ip, method, path, message)
 		//		logFile.Write([]byte(output))
 		line := fmt.Sprintf("%s | %v | %4v | %s | %s | %s | %v", now.Format("2006/01/02 - 15:04:05"), latency, status, ip, method, path, responseLength)
 		if message != nil {
 			line += fmt.Sprintf(" | %v", message)
+		}
+		if headerMessage != nil {
+			line += fmt.Sprintf(" | %v", headerMessage)
 		}
 		line += "\n"
 
