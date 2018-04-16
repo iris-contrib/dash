@@ -181,7 +181,13 @@ func startServer() {
 				_ = ioutil.WriteFile(filename, []byte(s), 0644)
 			}
 		})
-		app.Run(iris.TLS(fmt.Sprintf(":%v", *portFlag), folderPath+"/cert.pem", folderPath+"/key.pem"), iris.WithoutVersionChecker)
+		certName := *certFlag
+		keyName := *keyFlag
+		if (certName == "") || (keyName == "") {
+			certName = folderPath + "/cert.pem"
+			keyName = folderPath + "/key.pem"
+		}
+		app.Run(iris.TLS(fmt.Sprintf(":%v", *portFlag), certName, keyName), iris.WithoutVersionChecker)
 	}()
 }
 func stopServer() {

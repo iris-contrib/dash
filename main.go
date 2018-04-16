@@ -19,6 +19,8 @@ var (
 	verFlag    *bool
 	svcFlag    *string
 	dsnFlag    *string
+	certFlag   *string
+	keyFlag    *string
 	portFlag   *int
 	debugFlag  *bool
 )
@@ -95,6 +97,8 @@ func main() {
 	verFlag = flag.Bool("version", false, "Show version")
 	svcFlag = flag.String("service", "", fmt.Sprintf("Control the system service. Valid actions: %q\n", service.ControlAction))
 	dsnFlag = flag.String("dsn", "", "    MS SQL connection string (server=%s;user id=%s;password=%s;port=%d)")
+	certFlag = flag.String("cert", "", "    cert file name")
+	keyFlag = flag.String("key", "", "    key file name")
 	portFlag = flag.Int("port", 9999, "Port")
 	debugFlag = flag.Bool("debug", false, "Produce reques/response dumps")
 
@@ -115,7 +119,12 @@ func main() {
 		Name:        fmt.Sprintf(confServiceName, *portFlag),
 		DisplayName: serviceDispName(),
 		Description: serviceDispName(),
-		Arguments:   []string{fmt.Sprintf("-dsn=%s", *dsnFlag), fmt.Sprintf("-port=%v", *portFlag)},
+		Arguments: []string{
+			fmt.Sprintf("-dsn=%s", *dsnFlag),
+			fmt.Sprintf("-port=%v", *portFlag),
+			fmt.Sprintf("-cert=%v", *certFlag),
+			fmt.Sprintf("-key=%v", *keyFlag),
+		},
 	}
 
 	prg := &program{}
