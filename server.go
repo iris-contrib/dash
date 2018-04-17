@@ -177,8 +177,9 @@ func startServer() {
 				}
 				s = s + "<<<<<<<<<<<<<<<<<\n"
 
-				filename := fmt.Sprintf("%s\\log\\%s.dump", folderPath, time.Now().Format("2006-01-02T15-04-05-999999999Z07-00"))
-				_ = ioutil.WriteFile(filename, []byte(s), 0644)
+				fmt.Printf("%s/log/%s.dump\n", folderPath, time.Now().Format("2006-01-02T15-04-05-999999999Z07-00"))
+				filename := fmt.Sprintf("%s/log/%s.dump", folderPath, time.Now().Format("2006-01-02T15-04-05-999999999Z07-00"))
+				_ = ioutil.WriteFile(filename, []byte(s), 0666)
 			}
 		})
 		certName := *certFlag
