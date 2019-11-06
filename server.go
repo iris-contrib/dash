@@ -2,7 +2,6 @@
 package main
 
 import (
-	//	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -15,15 +14,10 @@ import (
 	"strings"
 	"time"
 
-	//	"html/template"
-
-	"github.com/kardianos/osext"
-
 	_ "github.com/denisenkom/go-mssqldb"
-	"github.com/kataras/iris"
-	"github.com/kataras/iris/context"
-	irisLogger "github.com/kataras/iris/middleware/logger"
-	//_ "github.com/valyala/fasthttp"
+	"github.com/kardianos/osext"
+	"github.com/kataras/iris/v12"
+	irisLogger "github.com/kataras/iris/v12/middleware/logger"
 )
 
 var (
@@ -48,7 +42,7 @@ func startServer() {
 		app.RegisterView(iris.HTML(folderPath+"/templates", ".html").Reload(true))
 
 		// Register custom handler for specific http errors.
-		app.OnErrorCode(iris.StatusInternalServerError, func(ctx context.Context) {
+		app.OnErrorCode(iris.StatusInternalServerError, func(ctx iris.Context) {
 			// .Values are used to communicate between handlers, middleware.
 			errMessage := ctx.Values().GetString("error")
 			if errMessage != "" {
@@ -58,10 +52,10 @@ func startServer() {
 
 			ctx.Writef("(Unexpected) internal server error")
 		})
-		app.StaticWeb("/js", folderPath+"/static/js")
+		app.HandleDir("/js", folderPath+"/static/js")
 
-		app.Get("/*filepath", func(ctx context.Context) {
-			filePath := ctx.Params().Get("filepath")
+		app.Get("/{file:path}", func(ctx iris.Context) {
+			filePath := ctx.Params().Get("file")
 			if filePath == "" {
 				ctx.NotFound()
 				return
@@ -75,7 +69,7 @@ func startServer() {
 			}
 		})
 
-		app.Get("/data/:name", func(ctx context.Context) {
+		app.Get("/data/{name:string}", func(ctx iris.Context) {
 			//ctx.Render("client.html", clientPage{"Client Page", ctx.HostString()})
 			//connString := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d", *server, *user, *password, *port)
 			dataName := ctx.Params().Get("name")
@@ -187,7 +181,7 @@ func startServer() {
 			certName = folderPath + "/cert.pem"
 			keyName = folderPath + "/key.pem"
 		}
-		app.Run(iris.TLS(fmt.Sprintf(":%v", *portFlag), certName, keyName), iris.WithoutVersionChecker)
+		app.Run(iris.TLS(fmt.Sprintf(":%v", *portFlag), certName, keyName), iris.WithoutServerError(iris.ErrServerClosed))
 	}()
 }
 func stopServer() {
@@ -212,7 +206,7 @@ func newLogFile(filePath string) *os.File {
 	return f
 }
 
-func newRequestLogger(filePath string) (h context.Handler, close func() error) {
+func newRequestLogger(filePath string) (h iris.Handler, close func() error) {
 	close = func() error { return nil }
 
 	c := irisLogger.Config{
@@ -230,10 +224,14 @@ func newRequestLogger(filePath string) (h context.Handler, close func() error) {
 		return err
 	}
 
-	c.LogFunc = func(now time.Time, latency time.Duration, status, ip, method, path string, responseLength int, message interface{}, headerMessage interface{}) {
+	c.LogFunc = func(now time.Time, latency time.Duration, status, ip, method, path string, message interface{}, headerMessage interface{}) {
 		//		output := irisLogger.Columnize(now.Format("2006/01/02 - 15:04:05"), latency, status, ip, method, path, message)
 		//		logFile.Write([]byte(output))
-		line := fmt.Sprintf("%s | %v | %4v | %s | %s | %s | %v", now.Format("2006/01/02 - 15:04:05"), latency, status, ip, method, path, responseLength)
+		//
+		// Note: responseLength was never part of iris logger, I don't know why it is here
+		// however, you can get it using the `ctx.Record();ctx.Next()` on `app.Use`
+		// and can be retrieved with `len(ctx.Recorder().Body())`.
+		line := fmt.Sprintf("%s | %v | %4v | %s | %s | %s", now.Format("2006/01/02 - 15:04:05"), latency, status, ip, method, path)
 		if message != nil {
 			line += fmt.Sprintf(" | %v", message)
 		}
